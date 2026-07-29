@@ -1,0 +1,74 @@
+# =============================================================================
+# Local infrastructure for the fraud platform.
+# NOTE: Neo4j runs on Neo4j Aura (cloud cluster) — NOT here. Configure it in .env.
+# Services: Redpanda (Kafka API), MongoDB, MLflow tracking server.
+# =============================================================================
+services:
+
+  # --- Kafka-compatible bus (Redpanda: lighter than full Kafka for a laptop) ---
+  redpanda:
+    image: redpandadata/redpanda:v24.1.2
+    container_name: fraud-redpanda
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --overprovisioned
+      - --node-id=0
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:19092
+    ports:
+      - "19092:19092"   # host-facing Kafka API
+      - "9644:9644"     # admin
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # --- Redpanda Console (optional Kafka UI) ---
+  redpanda-console:
+    image: redpandadata/console:v2.5.2
+    container_name: fraud-redpanda-console
+    depends_on:
+      - redpanda
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+
+  # --- MongoDB serving store ---
+  mongo:
+    image: mongo:7
+    container_name: fraud-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # --- MLflow tracking + registry (sqlite backend, local artifacts) ---
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.11.3
+    container_name: fraud-mlflow
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+
+volumes:
+  mongo_data:
+  mlflow_data:
