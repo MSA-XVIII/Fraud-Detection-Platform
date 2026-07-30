@@ -3,7 +3,7 @@
 
 PY ?= python
 
-.PHONY: help install up down logs seed create-topics stream producer dashboard \
+.PHONY: help install up down logs seed create-topics stream producer dashboard demo \
         train drift graph-load eval-llm finetune test lint fmt typecheck chaos clean
 
 help:
@@ -16,6 +16,7 @@ help:
 	@echo "  producer      Run synthetic transaction producer"
 	@echo "  stream        Run the scoring stream (Kafka -> score -> Mongo/Delta)"
 	@echo "  dashboard     Launch the Streamlit dashboard"
+	@echo "  demo          Launch the standalone demo dashboard (no infra needed)"
 	@echo "  train         Train + register a model in MLflow"
 	@echo "  graph-load    ETL flagged entities into Neo4j Aura + community detection"
 	@echo "  drift         Run drift detection (may trigger retrain)"
@@ -54,6 +55,9 @@ stream:
 
 dashboard:
 	$(PY) -m streamlit run src/fraud/dashboard/app.py
+
+demo:
+	$(PY) -m streamlit run src/fraud/dashboard/demo_app.py
 
 train:
 	$(PY) -m fraud.ml.train

@@ -54,6 +54,21 @@ Three planes, each with its own SLA:
 
 ## Quickstart
 
+### Zero-setup demo (no infra)
+
+```bash
+make install                 # pip install -e ".[dev]"
+make demo                    # http://localhost:8501
+```
+
+`make demo` launches an interactive dashboard that replays five example fraud
+cases — card-testing burst, impossible travel, account takeover, shared-device
+fraud ring, and a normal-shopper baseline — through the platform's **real**
+feature engineering and scorer, in-process. It includes a what-if playground to
+move each risk signal and watch the score respond. No Kafka/MongoDB/Neo4j needed.
+
+### Full platform
+
 ```bash
 # 0. Python deps
 make install                 # pip install -e ".[dev]"
@@ -137,6 +152,7 @@ make finetune                # export feedback -> fine-tune -> print how to serv
 | `make producer` | Synthetic transaction + attack generator |
 | `make stream` | Hot-path scoring consumer |
 | `make dashboard` | Streamlit console |
+| `make demo` | Standalone demo dashboard with example cases (no infra) |
 | `make train` | Train + register a model (promotes if it beats incumbent) |
 | `make drift` | PSI drift check → triggers retrain if drifted |
 | `make graph-load` | Recompute Neo4j communities / rings |
@@ -161,6 +177,7 @@ src/fraud/
   assist/                  LangChain: llm, prompts, retriever, chains, agent,
                            tracing (LangSmith), finetune, eval
   dashboard/app.py         Streamlit console
+  dashboard/demo_app.py    standalone demo dashboard (demo_cases.py = example cases)
 tests/                     features, schemas, scorer, chains (mocked LLM), finetune
 docs/                      architecture + runbook
 ```
